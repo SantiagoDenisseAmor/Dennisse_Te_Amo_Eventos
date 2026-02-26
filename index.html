@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+
+<title>Mini Royale Love</title>
+
+<style>
+body{
+margin:0;
+background:#020617;
+overflow:hidden;
+font-family:Arial;
+}
+
+canvas{
+position:absolute;
+}
+
+#ui{
+position:fixed;
+bottom:0;
+width:100%;
+background:#000c;
+padding:8px;
+}
+
+.card{
+width:60px;
+height:80px;
+background:linear-gradient(#fb7185,#be123c);
+border-radius:12px;
+color:white;
+font-size:10px;
+display:inline-flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+margin:4px;
+border:2px solid gold;
+}
+
+.card img{
+width:40px;
+height:40px;
+}
+
+#eliBar{
+height:10px;
+background:#222;
+border-radius:20px;
+margin-bottom:6px;
+overflow:hidden;
+}
+
+#eli{
+height:100%;
+background:linear-gradient(to right,#a855f7,#ec4899);
+width:100%;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="c"></canvas>
+
+<div id="ui">
+<div id="eliBar"><div id="eli"></div></div>
+<div id="cards"></div>
+</div>
+
+<!-- MUSICA -->
+<audio id="music" autoplay loop>
+<source src="https://cdn.pixabay.com/audio/2023/03/13/audio_2fbb0b31cb.mp3">
+</audio>
+
+<audio id="hit">
+<source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2d1d7a6d0c.mp3">
+</audio>
+
+<script>
+
+const redirectWin="ganaste.html";
+
+const cv=c,ctx=cv.getContext("2d");
+
+function resize(){
+cv.width=innerWidth;
+cv.height=innerHeight-130;
+}
+resize();onresize=resize;
+
+// ================== ELIXIR ===================
+
+let elixir=10;
+setInterval(()=>elixir=Math.min(10,elixir+.5),1000);
+
+// ================= TROOPS ===================
+
+const troops=[
+["Bruja","img/bruja.png",5],
+["Mosquetera","img/mosquetera.png",4],
+["Cazador","img/cazador.png",4],
+["Barbaros","img/barbaro.png",5],
+["Dragon","img/dragon.png",4],
+["Fantasma","img/fantasma.png",4],
+["MiniPEKKA","img/pekka.png",4],
+["Mago","img/mago.png",4]
+];
+
+let deck=[0,1,2,3],queue=[4,5,6,7];
+
+// ================= CARTAS ===================
+
+function drawCards(){
+cards.innerHTML="";
+deck.forEach(i=>{
+let d=document.createElement("div");
+d.className="card";
+d.innerHTML=`<img src="${troops[i][1]}"><br>${troops[i][0]}<br>${troops[i][2]}`;
+d.onclick=()=>spawn(i);
+cards.appendChild(d);
+});
+}
+drawCards();
+
+// ================= UNIDADES ===================
+
+class Unit{
+constructor(x,y,i,dir){
+this.x=x;
+this.y=y;
+this.i=i;
+this.dir=dir;
+this.hp=100;
+this.img=new Image();
+this.img.src=troops[i][1];
+}
+}
+
+let P=[],E=[],shots=[];
+
+// ================= SPAWN ===================
+
+function spawn(i){
+if(elixir<troops[i][2])return;
+elixir-=troops[i][2];
+
+P.push(new Unit(cv.width/2,cv.height-80,i,-1));
+
+deck.splice(deck.indexOf(i),1);
+deck.push(queue.shift());
+queue.push(i);
+drawCards();
+}
+
+// enemigos automáticos
+setInterval(()=>{
+E.push(new Unit(cv.width/2,80,Math.floor(Math.random()*8),1));
+},2200);
+
+// ================= TORRES ===================
+
+let towerImg=new Image();
+towerImg.src="img/torre.png";
+
+let towers=[
+{x:cv.width/2,y:40,hp:500}
+];
+
+// ================= LOOP ===================
+
+function loop(){
+
+ctx.clearRect(0,0,cv.width,cv.height);
+
+// campo
+ctx.fillStyle="#16a34a";
+ctx.fillRect(0,0,cv.width,cv.height);
+
+// río
+ctx.fillStyle="#38bdf8";
+ctx.fillRect(0,cv.height/2-25,cv.width,50);
+
+// torre enemigo
+let t=towers[0];
+ctx.drawImage(towerImg,t.x-30,t.y-30,60,60);
+ctx.fillStyle="red";
+ctx.fillRect(t.x-30,t.y-40,60*(t.hp/500),6);
+
+// unidades jugador
+P.forEach(u=>{
+u.y+=u.dir*0.7;
+ctx.drawImage(u.img,u.x-18,u.y-18,36,36);
+
+// daño torre
+if(Math.abs(u.y-t.y)<30){
+t.hp-=0.5;
+hit.play();
+}
+});
+
+// enemigos
+E.forEach(u=>{
+u.y+=u.dir*0.5;
+ctx.drawImage(u.img,u.x-18,u.y-18,36,36);
+});
+
+// eliminar muertos
+P=P.filter(u=>u.y>0);
+E=E.filter(u=>u.y<cv.height);
+
+// barra elixir
+eli.style.width=(elixir/10*100)+"%";
+
+// victoria
+if(t.hp<=0){
+alert("👑 GANASTE ❤️");
+location.href=redirectWin;
+}
+
+requestAnimationFrame(loop);
+}
+
+loop();
+
+</script>
+
+</body>
+</html>
